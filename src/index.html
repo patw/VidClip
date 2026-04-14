@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; media-src 'self' http://127.0.0.1:* blob:; connect-src http://127.0.0.1:*; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline';" />
+  <title>VidClip</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Toolbar -->
+  <div id="toolbar">
+    <span class="app-title">VidClip</span>
+    <button id="btn-open" class="tb-btn primary">Open Video</button>
+    <span id="file-label" class="file-label">No file loaded</span>
+    <div class="tb-spacer"></div>
+    <button id="btn-export" class="tb-btn accent" disabled>Export Clip</button>
+  </div>
+
+  <!-- Video area -->
+  <div id="video-wrap">
+    <div id="drop-overlay">
+      <div class="drop-message">
+        <div class="drop-icon">&#9654;</div>
+        <div>Drop a video here or click <strong>Open Video</strong></div>
+      </div>
+    </div>
+    <video id="video" preload="metadata"></video>
+  </div>
+
+  <!-- Controls -->
+  <div id="controls">
+    <button id="btn-play" class="ctrl-btn" disabled title="Play / Pause (Space)">&#9654;</button>
+    <span id="time-display" class="time-display">0:00:00.000 / 0:00:00.000</span>
+    <div class="ctrl-spacer"></div>
+    <label class="ctrl-label" title="Playback speed">Speed</label>
+    <select id="speed-select" class="ctrl-select">
+      <option value="0.25">0.25x</option>
+      <option value="0.5">0.5x</option>
+      <option value="1" selected>1x</option>
+      <option value="1.5">1.5x</option>
+      <option value="2">2x</option>
+    </select>
+    <label class="ctrl-label" title="Volume">Vol</label>
+    <input type="range" id="volume" min="0" max="1" step="0.01" value="1" class="volume-slider" />
+  </div>
+
+  <!-- Timeline -->
+  <div id="timeline-section">
+    <div id="timeline-container">
+      <canvas id="timeline" height="56"></canvas>
+      <div id="playhead"></div>
+    </div>
+    <div id="marker-controls">
+      <button id="btn-in" class="mk-btn" disabled title="Set In point (I)">[ In</button>
+      <span id="in-display" class="mk-display">--:--:--.---</span>
+      <button id="btn-out" class="mk-btn" disabled title="Set Out point (O)">Out ]</button>
+      <span id="out-display" class="mk-display">--:--:--.---</span>
+      <span id="clip-dur" class="clip-dur"></span>
+      <button id="btn-clear" class="mk-btn clear" disabled title="Clear in/out markers">Clear</button>
+      <button id="btn-goto-in" class="mk-btn" disabled title="Go to In point">&#8676; In</button>
+      <button id="btn-goto-out" class="mk-btn" disabled title="Go to Out point">Out &#8677;</button>
+    </div>
+  </div>
+
+  <!-- Export Dialog (hidden) -->
+  <div id="export-overlay" class="hidden">
+    <div id="export-dialog">
+      <h2>Export Clip</h2>
+
+      <div class="dlg-section">
+        <h3>Output</h3>
+        <div class="dlg-row">
+          <label>Output path</label>
+          <div class="path-row">
+            <input type="text" id="out-path" readonly placeholder="Click Browse to choose..." />
+            <button id="btn-browse" class="dlg-btn">Browse</button>
+          </div>
+        </div>
+        <div class="dlg-row">
+          <label>Format</label>
+          <select id="out-format">
+            <option value="mp4">MP4</option>
+            <option value="mov">MOV</option>
+            <option value="mkv">MKV</option>
+            <option value="webm">WebM</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="dlg-section">
+        <h3>Video</h3>
+        <div class="dlg-row">
+          <label>Codec</label>
+          <select id="v-codec">
+            <option value="copy">Copy (no re-encode)</option>
+            <option value="libx264" selected>H.264 (libx264)</option>
+            <option value="libx265">H.265 / HEVC (libx265)</option>
+            <option value="libvpx-vp9">VP9 (libvpx-vp9)</option>
+            <option value="libsvtav1">AV1 (libsvtav1)</option>
+          </select>
+        </div>
+        <div class="dlg-row" id="row-crf">
+          <label>Quality (CRF)</label>
+          <input type="range" id="crf-slider" min="0" max="51" value="23" />
+          <span id="crf-val">23</span>
+          <span class="hint">(lower = better)</span>
+        </div>
+        <div class="dlg-row">
+          <label>Resolution</label>
+          <select id="v-res">
+            <option value="source">Source</option>
+            <option value="-2:2160">4K (2160p)</option>
+            <option value="-2:1440">1440p</option>
+            <option value="-2:1080">1080p</option>
+            <option value="-2:720">720p</option>
+            <option value="-2:480">480p</option>
+            <option value="-2:360">360p</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="dlg-section">
+        <h3>Audio</h3>
+        <div class="dlg-row">
+          <label>Codec</label>
+          <select id="a-codec">
+            <option value="copy">Copy (no re-encode)</option>
+            <option value="aac" selected>AAC</option>
+            <option value="libmp3lame">MP3</option>
+            <option value="libopus">Opus</option>
+            <option value="flac">FLAC</option>
+          </select>
+        </div>
+        <div class="dlg-row">
+          <label>Bitrate</label>
+          <select id="a-bitrate">
+            <option value="96k">96 kbps</option>
+            <option value="128k" selected>128 kbps</option>
+            <option value="192k">192 kbps</option>
+            <option value="256k">256 kbps</option>
+            <option value="320k">320 kbps</option>
+          </select>
+        </div>
+        <div class="dlg-row">
+          <label>Volume boost</label>
+          <input type="range" id="vol-boost" min="0.1" max="5" step="0.05" value="1" />
+          <span id="vol-boost-val">1.0x</span>
+        </div>
+        <div class="dlg-row">
+          <label>Normalize loudness</label>
+          <input type="checkbox" id="a-normalize" />
+          <span class="hint">(EBU R128 loudnorm)</span>
+        </div>
+      </div>
+
+      <div id="progress-section" class="hidden">
+        <div id="progress-bar-wrap">
+          <div id="progress-bar"></div>
+        </div>
+        <span id="progress-label">Exporting…</span>
+      </div>
+
+      <div id="dlg-buttons">
+        <button id="btn-cancel-export" class="dlg-btn">Cancel</button>
+        <button id="btn-run-export" class="dlg-btn primary">Export</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
