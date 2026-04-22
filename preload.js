@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
   openFile:       ()       => ipcRenderer.invoke('open-file'),
@@ -9,6 +9,9 @@ contextBridge.exposeInMainWorld('api', {
   getServerPort:  ()       => ipcRenderer.invoke('get-server-port'),
   makeProxy:      (p)      => ipcRenderer.invoke('make-proxy', p),
   cancelProxy:    ()       => ipcRenderer.invoke('cancel-proxy'),
+
+  getFilePath:      (file) => webUtils.getPathForFile(file),
+  onOpenFilePath:   (cb)  => ipcRenderer.on('open-file-path', (_, p) => cb(p)),
 
   onExportProgress: (cb) => ipcRenderer.on('export-progress', (_, d) => cb(d)),
   offExportProgress: ()  => ipcRenderer.removeAllListeners('export-progress'),

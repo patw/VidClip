@@ -44,22 +44,22 @@ A lightweight video clipper built with Electron and FFmpeg. Load a video, mark i
 
 **AppImage** (no install needed):
 ```bash
-chmod +x VidClip-1.0.0.AppImage
-./VidClip-1.0.0.AppImage
+chmod +x VidClip-1.0.1.AppImage
+./VidClip-1.0.1.AppImage
 ```
 
 **Debian / Ubuntu**:
 ```bash
-sudo dpkg -i vidclip_1.0.0_amd64.deb
+sudo dpkg -i vidclip_1.0.1_amd64.deb
 ```
 
 ### Windows
 
-Run the `VidClip Setup 1.0.0.exe` installer.
+Run the `VidClip Setup 1.0.1.exe` installer.
 
 ### macOS
 
-Open `VidClip-1.0.0.dmg` and drag VidClip to your Applications folder.
+Open `VidClip-1.0.1.dmg` and drag VidClip to your Applications folder.
 
 ---
 
@@ -77,9 +77,9 @@ npm start
 ### Building distributables
 
 ```bash
-npm run build:linux   # → dist/VidClip-1.0.0.AppImage + .deb
-npm run build:win     # → dist/VidClip Setup 1.0.0.exe
-npm run build:mac     # → dist/VidClip-1.0.0.dmg  (must run on macOS)
+npm run build:linux   # → dist/VidClip-1.0.1.AppImage + .deb
+npm run build:win     # → dist/VidClip Setup 1.0.1.exe
+npm run build:mac     # → dist/VidClip-1.0.1.dmg  (must run on macOS)
 ```
 
 > **Cross-platform note:** `ffmpeg-static` and `ffprobe-static` download platform-specific binaries at `npm install` time. Build for each target platform on its native OS, or use a CI matrix (e.g. GitHub Actions) to produce all three.

@@ -199,6 +199,36 @@ function updatePlayhead() {
 // ── Video event handlers ──────────────────────────────────────────────────────
 let proxyInProgress = false;
 
+// Codecs that Chromium/Electron cannot decode natively
+const NEEDS_PROXY_CODECS = new Set([
+  'hevc', 'h265',        // GoPro HERO 8+, most modern cameras
+  'vc1', 'wmv3', 'wmv2', 'wmv1',
+  'vp6', 'vp6f', 'flv1',
+  'mpeg1video', 'mpeg2video',
+  'rv40', 'rv30',
+]);
+
+async function startProxy(filePath) {
+  if (proxyInProgress) return;
+  proxyInProgress = true;
+  fileLabel.textContent = 'Transcoding to H.264 proxy…';
+  window.api.onProxyProgress(({ secs }) => {
+    fileLabel.textContent = `Transcoding… ${fmtTime(secs)}`;
+  });
+  try {
+    const proxyPath = await window.api.makeProxy(filePath);
+    window.api.offProxyProgress();
+    fileLabel.textContent = currentFile.split('/').pop() + ' [proxy]';
+    proxyInProgress = false;
+    video.src = videoUrl(proxyPath);
+    video.load();
+  } catch (err) {
+    window.api.offProxyProgress();
+    proxyInProgress = false;
+    fileLabel.textContent = `Error: ${err.message}`;
+  }
+}
+
 video.addEventListener('loadedmetadata', () => {
   duration = video.duration;
   updateMarkerDisplays();
@@ -213,23 +243,7 @@ video.addEventListener('loadedmetadata', () => {
 video.addEventListener('error', async () => {
   if (!currentFile || proxyInProgress) return;
   // Native decode failed — transcode to H.264 proxy for playback
-  proxyInProgress = true;
-  fileLabel.textContent = `Transcoding to H.264 proxy…`;
-  window.api.onProxyProgress(({ secs }) => {
-    fileLabel.textContent = `Transcoding… ${fmtTime(secs)}`;
-  });
-  try {
-    const proxyPath = await window.api.makeProxy(currentFile);
-    window.api.offProxyProgress();
-    fileLabel.textContent = currentFile.split('/').pop() + ' [proxy]';
-    proxyInProgress = false;
-    video.src = videoUrl(proxyPath);
-    video.load();
-  } catch (err) {
-    window.api.offProxyProgress();
-    proxyInProgress = false;
-    fileLabel.textContent = `Error: ${err.message}`;
-  }
+  await startProxy(currentFile);
 });
 
 // ── Load video ────────────────────────────────────────────────────────────────
@@ -250,6 +264,17 @@ async function loadFile(filePath) {
   // Wait until serverPort is known (it's set async on startup)
   if (!serverPort) serverPort = await window.api.getServerPort();
 
+  // Probe codec upfront — skip native playback attempt for known-unsupported codecs
+  // (e.g. GoPro H.265/HEVC: metadata loads fine but video renders black, no error event)
+  try {
+    const info = await window.api.probeVideo(filePath);
+    const vs = info.streams.find(s => s.codec_type === 'video');
+    if (vs && NEEDS_PROXY_CODECS.has(vs.codec_name?.toLowerCase())) {
+      await startProxy(filePath);
+      return;
+    }
+  } catch { /* ignore probe errors; fall through to native attempt */ }
+
   video.src = videoUrl(filePath);
   video.load();
 }
@@ -265,8 +290,14 @@ document.body.addEventListener('dragover', e => { e.preventDefault(); e.stopProp
 document.body.addEventListener('drop', e => {
   e.preventDefault(); e.stopPropagation();
   const file = e.dataTransfer.files[0];
-  if (file) loadFile(file.path);
+  if (file) {
+    const filePath = window.api.getFilePath(file);
+    if (filePath) loadFile(filePath);
+  }
 });
+
+// ── CLI / IPC file open ───────────────────────────────────────────────────────
+window.api.onOpenFilePath(filePath => { if (filePath) loadFile(filePath); });
 
 // ── Playback controls ─────────────────────────────────────────────────────────
 btnPlay.addEventListener('click', togglePlay);

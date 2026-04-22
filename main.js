@@ -152,6 +152,13 @@ function createWindow() {
 app.whenReady().then(() => {
   Menu.setApplicationMenu(null);
   createWindow();
+
+  // Open a file passed on the command line, e.g.: electron . /path/to/video.mp4
+  mainWindow.webContents.once('did-finish-load', () => {
+    const args = process.argv.slice(app.isPackaged ? 1 : 2);
+    const filePath = args.find(a => !a.startsWith('-') && fs.existsSync(a));
+    if (filePath) mainWindow.webContents.send('open-file-path', filePath);
+  });
 });
 
 app.on('window-all-closed', () => {
