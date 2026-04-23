@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain, dialog, shell, Menu } = require('electron');
 const path = require('path');
+const PACKAGE = require('./package.json');
 const { spawn } = require('child_process');
 const fs = require('fs');
 const http = require('http');
@@ -80,6 +81,7 @@ fileServer.listen(0, '127.0.0.1', () => {
 
 // ── IPC: get server port ──────────────────────────────────────────────────────
 ipcMain.handle('get-server-port', () => serverPort);
+ipcMain.handle('get-app-version', () => PACKAGE.version);
 
 // ── Proxy transcoding ─────────────────────────────────────────────────────────
 // When a codec isn't supported natively (e.g. HEVC/H.265), transcode to a

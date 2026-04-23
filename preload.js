@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('api', {
   exportClip:     (opts)   => ipcRenderer.invoke('export-clip', opts),
   showInFolder:   (p)      => ipcRenderer.invoke('show-in-folder', p),
   getServerPort:  ()       => ipcRenderer.invoke('get-server-port'),
+  getAppVersion:  ()       => ipcRenderer.invoke('get-app-version'),
   makeProxy:      (p)      => ipcRenderer.invoke('make-proxy', p),
   cancelProxy:    ()       => ipcRenderer.invoke('cancel-proxy'),
 

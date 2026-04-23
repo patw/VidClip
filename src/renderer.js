@@ -1,6 +1,7 @@
 'use strict';
 
 // ── Elements ──────────────────────────────────────────────────────────────────
+const versionLabel = document.getElementById('version-label');
 const video       = document.getElementById('video');
 const dropOverlay = document.getElementById('drop-overlay');
 const fileLabel   = document.getElementById('file-label');
@@ -60,6 +61,9 @@ const ctx        = timeline.getContext('2d');
 
 // Get the local HTTP server port from main process
 window.api.getServerPort().then(p => { serverPort = p; });
+
+// Display app version
+window.api.getAppVersion().then(v => { versionLabel.textContent = `v${v}`; });
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function pad(n, len = 2) { return String(Math.floor(n)).padStart(len, '0'); }
