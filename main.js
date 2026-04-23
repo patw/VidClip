@@ -100,6 +100,7 @@ ipcMain.handle('make-proxy', async (event, srcPath) => {
     '-i', srcPath,
     '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '28',
     '-c:a', 'aac', '-b:a', '128k',
+    '-af', 'aformat=sample_fmts=fltp',
     '-movflags', '+faststart',
     proxyPath,
   ];

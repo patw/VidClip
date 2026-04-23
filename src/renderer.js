@@ -42,6 +42,12 @@ const progressBar     = document.getElementById('progress-bar');
 const progressLabel   = document.getElementById('progress-label');
 const rowCrf          = document.getElementById('row-crf');
 
+// Proxy dialog
+const proxyOverlay       = document.getElementById('proxy-overlay');
+const proxyProgressBar   = document.getElementById('proxy-progress-bar');
+const proxyProgressLabel = document.getElementById('proxy-progress-label');
+const btnCancelProxy     = document.getElementById('btn-cancel-proxy');
+
 // ── State ─────────────────────────────────────────────────────────────────────
 let currentFile  = null;  // original file path (always used for export)
 let inPoint      = null;
@@ -208,16 +214,23 @@ const NEEDS_PROXY_CODECS = new Set([
   'rv40', 'rv30',
 ]);
 
-async function startProxy(filePath) {
+async function startProxy(filePath, knownDuration = 0) {
   if (proxyInProgress) return;
   proxyInProgress = true;
-  fileLabel.textContent = 'Transcoding to H.264 proxy…';
+  proxyOverlay.classList.remove('hidden');
+  proxyProgressBar.style.width = '0%';
+  proxyProgressLabel.textContent = 'Starting…';
   window.api.onProxyProgress(({ secs }) => {
-    fileLabel.textContent = `Transcoding… ${fmtTime(secs)}`;
+    proxyProgressLabel.textContent = `Transcoding… ${fmtTime(secs)}`;
+    if (knownDuration > 0) {
+      const pct = Math.min(100, Math.round((secs / knownDuration) * 100));
+      proxyProgressBar.style.width = `${pct}%`;
+    }
   });
   try {
     const proxyPath = await window.api.makeProxy(filePath);
     window.api.offProxyProgress();
+    proxyOverlay.classList.add('hidden');
     fileLabel.textContent = currentFile.split('/').pop() + ' [proxy]';
     proxyInProgress = false;
     video.src = videoUrl(proxyPath);
@@ -225,6 +238,7 @@ async function startProxy(filePath) {
   } catch (err) {
     window.api.offProxyProgress();
     proxyInProgress = false;
+    proxyOverlay.classList.add('hidden');
     fileLabel.textContent = `Error: ${err.message}`;
   }
 }
@@ -243,7 +257,7 @@ video.addEventListener('loadedmetadata', () => {
 video.addEventListener('error', async () => {
   if (!currentFile || proxyInProgress) return;
   // Native decode failed — transcode to H.264 proxy for playback
-  await startProxy(currentFile);
+  await startProxy(currentFile, duration || 0);
 });
 
 // ── Load video ────────────────────────────────────────────────────────────────
@@ -270,7 +284,8 @@ async function loadFile(filePath) {
     const info = await window.api.probeVideo(filePath);
     const vs = info.streams.find(s => s.codec_type === 'video');
     if (vs && NEEDS_PROXY_CODECS.has(vs.codec_name?.toLowerCase())) {
-      await startProxy(filePath);
+      const dur = parseFloat(info.format?.duration) || 0;
+      await startProxy(filePath, dur);
       return;
     }
   } catch { /* ignore probe errors; fall through to native attempt */ }
@@ -457,6 +472,26 @@ btnBrowse.addEventListener('click', async () => {
     const opt = outFormat.querySelector(`option[value="${ext}"]`);
     if (opt) outFormat.value = ext;
   }
+});
+
+btnCancelProxy.addEventListener('click', () => {
+  if (!proxyInProgress) return;
+  window.api.cancelProxy();
+  window.api.offProxyProgress();
+  proxyInProgress = false;
+  proxyOverlay.classList.add('hidden');
+  currentFile = null;
+  fileLabel.textContent = 'No file loaded';
+  video.src = '';
+  dropOverlay.classList.remove('hidden');
+  btnPlay.disabled = true;
+  btnIn.disabled = true;
+  btnOut.disabled = true;
+  inPoint = null;
+  outPoint = null;
+  duration = 0;
+  updateMarkerDisplays();
+  drawTimeline();
 });
 
 btnRunExport.addEventListener('click', async () => {

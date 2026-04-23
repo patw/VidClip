@@ -180,6 +180,19 @@
     </div>
   </div>
 
+  <!-- Proxy Dialog (hidden) -->
+  <div id="proxy-overlay" class="hidden">
+    <div id="proxy-dialog">
+      <h2>Creating Playback Proxy</h2>
+      <p class="proxy-desc">This video uses a codec that can't be played directly.<br>Transcoding to H.264 for smooth playback…</p>
+      <div id="proxy-progress-wrap">
+        <div id="proxy-progress-bar"></div>
+      </div>
+      <div id="proxy-progress-label">Starting…</div>
+      <button id="btn-cancel-proxy" class="dlg-btn">Cancel</button>
+    </div>
+  </div>
+
   <script src="renderer.js"></script>
 </body>
 </html>
