@@ -252,7 +252,11 @@ ipcMain.handle('export-clip', async (event, opts) => {
     if (af.length) args.push('-af', af.join(','));
   }
 
-  args.push('-movflags', '+faststart', outputPath);
+  const ext = path.extname(outputPath).toLowerCase();
+  if (ext === '.mp4' || ext === '.mov') {
+    args.push('-movflags', '+faststart');
+  }
+  args.push(outputPath);
 
   return new Promise((resolve, reject) => {
     const proc = spawn(FFMPEG, args);

@@ -440,15 +440,28 @@ resizeTimeline();
 crfSlider.addEventListener('input', () => { crfVal.textContent = crfSlider.value; });
 volBoost.addEventListener('input',  () => { volBoostVal.textContent = `${parseFloat(volBoost.value).toFixed(2)}x`; });
 
+// VP9 cannot be written to the MOV container; switch to MP4 automatically
+function enforceFormatCompatibility() {
+  const codec = vCodec.value;
+  const fmt = outFormat.value;
+  if (codec === 'libvpx-vp9' && fmt === 'mov') {
+    outFormat.value = 'mp4';
+    const cur = outPathInput.value;
+    if (cur) outPathInput.value = cur.replace(/\.[^.]+$/, `.${outFormat.value}`);
+  }
+}
+
 vCodec.addEventListener('change', () => {
   const copy = vCodec.value === 'copy';
   rowCrf.style.opacity = copy ? '0.35' : '1';
   rowCrf.querySelector('input').disabled = copy;
+  enforceFormatCompatibility();
 });
 
 outFormat.addEventListener('change', () => {
   const cur = outPathInput.value;
   if (cur) outPathInput.value = cur.replace(/\.[^.]+$/, `.${outFormat.value}`);
+  enforceFormatCompatibility();
 });
 
 btnExport.addEventListener('click', () => {
